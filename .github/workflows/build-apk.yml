@@ -3,6 +3,8 @@ name: Build Android APK (Free GitHub Runner)
 on:
   push:
     branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
   workflow_dispatch:
 
 jobs:
@@ -11,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -20,19 +22,40 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configure Preinstalled Android SDK
+        run: |
+          echo "Setting up Android SDK environment..."
+          # GitHub-hosted ubuntu runners have Android SDK preinstalled at $ANDROID_SDK_ROOT
+          ANDROID_SDK_PATH="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$ANDROID_SDK_PATH" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_PATH" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_PATH/platform-tools" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_PATH/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_PATH/tools/bin" >> $GITHUB_PATH
 
-      - name: Build Release APK
+          # Automatically accept all Android SDK licenses
+          yes | "$ANDROID_SDK_PATH/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Android APK
         working-directory: android
         run: |
+          echo "Preparing gradlew executable..."
           chmod +x ./gradlew || true
-          gradle assembleRelease --stacktrace || gradle assembleDebug --stacktrace
+          
+          # Build Release and Debug APKs
+          if [ -f "./gradle/wrapper/gradle-wrapper.jar" ]; then
+            ./gradlew assembleRelease assembleDebug --stacktrace --no-daemon
+          else
+            gradle assembleRelease assembleDebug --stacktrace --no-daemon
+          fi
 
-      - name: Upload APK Artifact
+      - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NoorQuran-Android-APK
           path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
