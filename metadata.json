@@ -1,0 +1,6 @@
+{
+  "name": "Noor Quran",
+  "description": "A beautiful, respectful, mobile-first Holy Quran reader with Arabic Uthmani text, Hindi & English translations, audio recitation, Tasbeeh counter, Duas, and offline reading.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

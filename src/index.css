@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-arabic: 'Amiri', 'Scheherazade New', serif;
+    --font-scheherazade: 'Scheherazade New', 'Amiri', serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.font-arabic {
+  font-family: 'Amiri', 'Scheherazade New', 'Traditional Arabic', serif;
+  direction: rtl;
+  text-align: right;
+  line-height: 2.2;
+}
+
+.font-scheherazade {
+  font-family: 'Scheherazade New', 'Amiri', serif;
+  direction: rtl;
+  text-align: right;
+  line-height: 2.2;
+}
+
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Custom scrollbar for clean reading */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.35);
+}
+
+/* Ayah active highlight animation */
+@keyframes ayah-pulse {
+  0%, 100% {
+    background-color: rgba(16, 185, 129, 0.08);
+  }
+  50% {
+    background-color: rgba(16, 185, 129, 0.16);
+  }
+}
+
+.ayah-highlighted {
+  animation: ayah-pulse 2.5s infinite ease-in-out;
+  border-left: 3px solid #059669;
+}

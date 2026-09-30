@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny all unspecified paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Validation helper for User entity
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['userId', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'createdAt', 'email', 'displayName', 'photoURL']) &&
+        data.userId is string && data.userId == userId &&
+        (data.createdAt is timestamp || data.createdAt is string) &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 256)) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512));
+    }
+
+    // Validation helper for Bookmark entity
+    function isValidBookmark(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'surahNumber', 'surahName', 'englishName', 'ayahNumber', 'arabicText', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'surahNumber', 'surahName', 'englishName', 'ayahNumber', 'arabicText', 'translationText', 'createdAt']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.userId is string && data.userId == userId &&
+        data.surahNumber is int && data.surahNumber >= 1 && data.surahNumber <= 114 &&
+        data.surahName is string && data.surahName.size() <= 64 &&
+        data.englishName is string && data.englishName.size() <= 64 &&
+        data.ayahNumber is int && data.ayahNumber >= 1 &&
+        data.arabicText is string && data.arabicText.size() <= 4096 &&
+        (!('translationText' in data) || (data.translationText is string && data.translationText.size() <= 4096)) &&
+        (data.createdAt is timestamp || data.createdAt is string || data.createdAt is int);
+    }
+
+    // Validation helper for ReadingProgress
+    function isValidProgress(data, userId) {
+      return data.keys().hasAll(['userId', 'surahNumber', 'surahName', 'englishName', 'ayahNumber', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'surahNumber', 'surahName', 'englishName', 'ayahNumber', 'updatedAt']) &&
+        data.userId is string && data.userId == userId &&
+        data.surahNumber is int && data.surahNumber >= 1 && data.surahNumber <= 114 &&
+        data.surahName is string && data.surahName.size() <= 64 &&
+        data.englishName is string && data.englishName.size() <= 64 &&
+        data.ayahNumber is int && data.ayahNumber >= 1 &&
+        (data.updatedAt is timestamp || data.updatedAt is string || data.updatedAt is int);
+    }
+
+    // Validation helper for TasbeehData
+    function isValidTasbeeh(data, userId) {
+      return data.keys().hasAll(['userId', 'count', 'target', 'totalToday', 'selectedDhikrIndex', 'lastDate', 'updatedAt']) &&
+        data.keys().hasOnly(['userId', 'count', 'target', 'totalToday', 'selectedDhikrIndex', 'lastDate', 'updatedAt']) &&
+        data.userId is string && data.userId == userId &&
+        data.count is int && data.count >= 0 &&
+        data.target is int && data.target >= 1 &&
+        data.totalToday is int && data.totalToday >= 0 &&
+        data.selectedDhikrIndex is int && data.selectedDhikrIndex >= 0 &&
+        data.lastDate is string && data.lastDate.size() <= 16 &&
+        (data.updatedAt is timestamp || data.updatedAt is string || data.updatedAt is int);
+    }
+
+    // Connection test document
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'email']);
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Subcollection: Bookmarks
+      match /bookmarks/{bookmarkId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(bookmarkId) && isValidBookmark(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(bookmarkId) && isValidBookmark(incoming(), userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['translationText']);
+        allow delete: if isOwner(userId) && isValidId(bookmarkId);
+      }
+
+      // Subcollection: Reading Progress (lastRead document)
+      match /progress/lastRead {
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidProgress(incoming(), userId);
+        allow update: if isOwner(userId) && isValidProgress(incoming(), userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['surahNumber', 'surahName', 'englishName', 'ayahNumber', 'updatedAt']);
+        allow delete: if isOwner(userId);
+      }
+
+      // Subcollection: Tasbeeh State (current document)
+      match /tasbeeh/current {
+        allow get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidTasbeeh(incoming(), userId);
+        allow update: if isOwner(userId) && isValidTasbeeh(incoming(), userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['count', 'target', 'totalToday', 'selectedDhikrIndex', 'lastDate', 'updatedAt']);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

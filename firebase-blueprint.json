@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 128
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "User avatar URL",
+          "maxLength": 512
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when account profile was created"
+        }
+      },
+      "required": ["userId", "createdAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "Bookmarked Quranic Ayah",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique bookmark identifier formatted as surahNumber-ayahNumber",
+          "maxLength": 64
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "surahNumber": {
+          "type": "number",
+          "description": "Surah number (1 to 114)"
+        },
+        "surahName": {
+          "type": "string",
+          "description": "Surah Arabic name",
+          "maxLength": 64
+        },
+        "englishName": {
+          "type": "string",
+          "description": "Surah transliteration name",
+          "maxLength": 64
+        },
+        "ayahNumber": {
+          "type": "number",
+          "description": "Ayah number within Surah"
+        },
+        "arabicText": {
+          "type": "string",
+          "description": "Arabic Quranic verse text snippet",
+          "maxLength": 4096
+        },
+        "translationText": {
+          "type": "string",
+          "description": "Translation preview text",
+          "maxLength": 4096
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of bookmark creation"
+        }
+      },
+      "required": ["id", "userId", "surahNumber", "surahName", "englishName", "ayahNumber", "arabicText", "createdAt"]
+    },
+    "ReadingProgress": {
+      "title": "ReadingProgress",
+      "description": "Last read position in the Quran",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "surahNumber": {
+          "type": "number",
+          "description": "Surah number (1 to 114)"
+        },
+        "surahName": {
+          "type": "string",
+          "description": "Surah Arabic name",
+          "maxLength": 64
+        },
+        "englishName": {
+          "type": "string",
+          "description": "Surah transliteration name",
+          "maxLength": 64
+        },
+        "ayahNumber": {
+          "type": "number",
+          "description": "Ayah number in the Surah"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update"
+        }
+      },
+      "required": ["userId", "surahNumber", "surahName", "englishName", "ayahNumber", "updatedAt"]
+    },
+    "TasbeehData": {
+      "title": "TasbeehData",
+      "description": "Synced Tasbeeh counts and daily progress",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "count": {
+          "type": "number",
+          "description": "Current round count"
+        },
+        "target": {
+          "type": "number",
+          "description": "Dhikr target count"
+        },
+        "totalToday": {
+          "type": "number",
+          "description": "Total Dhikr count completed today"
+        },
+        "selectedDhikrIndex": {
+          "type": "number",
+          "description": "Index of selected Dhikr phrase"
+        },
+        "lastDate": {
+          "type": "string",
+          "description": "Date string YYYY-MM-DD",
+          "maxLength": 16
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of update"
+        }
+      },
+      "required": ["userId", "count", "target", "totalToday", "selectedDhikrIndex", "lastDate", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile document storing basic account identity"
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "User's bookmarked Quranic Ayahs synchronized across devices"
+    },
+    "/users/{userId}/progress/lastRead": {
+      "schema": { "$ref": "#/entities/ReadingProgress" },
+      "description": "Current reading position to seamlessly continue reading from any device"
+    },
+    "/users/{userId}/tasbeeh/current": {
+      "schema": { "$ref": "#/entities/TasbeehData" },
+      "description": "Synchronized Tasbeeh counter state and daily totals"
+    }
+  }
+}
